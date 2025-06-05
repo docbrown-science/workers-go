@@ -9,10 +9,15 @@ import (
 	"github.com/syumai/workers/internal/jsutil"
 )
 
-func toResponse(res js.Value, body io.ReadCloser) (*http.Response, error) {
+func toResponse(res js.Value, body io.ReadCloser, req *http.Request) (*http.Response, error) {
 	status := res.Get("status").Int()
 	header := ToHeader(res.Get("headers"))
 	contentLength, _ := strconv.ParseInt(header.Get("Content-Length"), 10, 64)
+
+	// Update the request URL to the response URL (redirects)
+	if req != nil {
+		req.URL.Host = res.Get("url").String()
+	}
 
 	return &http.Response{
 		Status:        strconv.Itoa(status) + " " + res.Get("statusText").String(),
@@ -20,14 +25,15 @@ func toResponse(res js.Value, body io.ReadCloser) (*http.Response, error) {
 		Header:        header,
 		Body:          body,
 		ContentLength: contentLength,
+		Request:       req,
 	}, nil
 }
 
 // ToResponse converts JavaScript sides Response to *http.Response.
 //   - Response: https://developer.mozilla.org/docs/Web/API/Response
-func ToResponse(res js.Value) (*http.Response, error) {
+func ToResponse(res js.Value, req *http.Request) (*http.Response, error) {
 	body := jsutil.ConvertReadableStreamToReadCloser(res.Get("body"))
-	return toResponse(res, body)
+	return toResponse(res, body, req)
 }
 
 // ToJSResponse converts *http.Response to JavaScript sides Response class object.

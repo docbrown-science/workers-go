@@ -68,5 +68,5 @@ func (s *DurableObjectStub) Fetch(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
-	return jshttp.ToResponse(jsRes)
+	return jshttp.ToResponse(jsRes, req)
 }
